@@ -22,11 +22,11 @@ if (!("__jstools__" in window)) {
             this.elapsed = now() - this.stime;
             delete this.stime;
         };
-        function init() {
+
+        function clear() {
             root = new node(0, null);
             curr = root;
             localStorage.removeItem('jstools.profile');
-            
         }
         function enter(num) {
             var child = new node(num, curr);
@@ -55,7 +55,7 @@ if (!("__jstools__" in window)) {
             return dig(root);
         }
         return {
-            'init':   init,
+            'clear':  clear,
             'enter':  enter,
             'exit':   exit,
             'tree':   tree,

@@ -26,8 +26,11 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.mozilla.javascript.CompilerEnvirons;
+import org.mozilla.javascript.IRFactory;
 import org.mozilla.javascript.Node;
 import org.mozilla.javascript.ast.AstNode;
+import org.mozilla.javascript.ast.AstRoot;
 import org.mozilla.javascript.ast.ExpressionStatement;
 import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.FunctionNode;
@@ -42,14 +45,13 @@ import org.mozilla.javascript.ast.StringLiteral;
  * 
  */
 public class Tracer extends Instrument {
-    private static String TRACER_NAME = "__tracer__";
+    private static String OBJECT_NAME = "__jstools__";
     private static String ENTER_NAME = "enter";
     private static String EXIT_NAME = "exit";
     private List<File> fileList;
     private List<FunctionNode> functionList;
     private List<ReturnStatement> returnList;
     private String source;
-    private int lastIndex = 0;
 
     public static void main(String args[]) {
         try {
@@ -85,8 +87,7 @@ public class Tracer extends Instrument {
         fileList.add(file);
         int fileId = fileList.size();
 
-        Parser parser = new Parser();
-        AstNode root = parser.parse(new StringReader(source));
+        AstNode root = parse(new StringReader(source));
         root.visit(new NodeVisitor() {
             @Override
             public boolean visit(AstNode node) {
@@ -107,10 +108,21 @@ public class Tracer extends Instrument {
         return preProcess(file, fileId) + root.toSource();
     }
     
+    public AstRoot parse(Reader reader) throws IOException {
+        CompilerEnvirons env = new CompilerEnvirons();
+        env.setRecoverFromErrors(true);
+        env.setGenerateDebugInfo(true);
+        env.setRecordingComments(true);
+        env.setRecordingLocalJsDocComments(true);
+
+        IRFactory factory = new IRFactory(env);
+        return factory.parse(reader, null, 1);
+    }
+    
     public String preProcess(File file, int fileId) {
         StringBuffer sb = new StringBuffer();
         try {
-            InputStream is = getClass().getResourceAsStream("js/tracer.js");
+            InputStream is = getClass().getResourceAsStream("js/jstools.js");
             InputStreamReader reader = new InputStreamReader(is, "UTF-8");
             char buf[] = new char[2048];
             int len = 0;
@@ -118,7 +130,6 @@ public class Tracer extends Instrument {
                 sb.append(new String(buf, 0, len));
             }
             reader.close();
-            sb.append("__tracer__.putFile(" + fileId + ", '" + file.getAbsolutePath() + "');\n");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -129,7 +140,7 @@ public class Tracer extends Instrument {
     
     protected void insrumentFunction(int fileId, FunctionNode node) {
         Name objName = new Name();
-        objName.setIdentifier(TRACER_NAME);
+        objName.setIdentifier(OBJECT_NAME);
         Name callName = new Name();
         callName.setIdentifier(ENTER_NAME);
         PropertyGet propertyGet = new PropertyGet();
@@ -193,7 +204,7 @@ public class Tracer extends Instrument {
         exitName.setIdentifier(EXIT_NAME);
         PropertyGet propertyGet = new PropertyGet();
         Name tracerName = new Name();
-        tracerName.setIdentifier(TRACER_NAME);
+        tracerName.setIdentifier(OBJECT_NAME);
         propertyGet.setTarget(tracerName);
         propertyGet.setProperty(exitName);
         FunctionCall call = new FunctionCall();
