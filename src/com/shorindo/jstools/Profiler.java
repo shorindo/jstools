@@ -44,28 +44,29 @@ import org.mozilla.javascript.ast.StringLiteral;
 /**
  * 
  */
-public class Tracer extends Instrument {
+public class Profiler extends Instrument {
     private static String OBJECT_NAME = "__jstools__";
     private static String ENTER_NAME = "enter";
     private static String EXIT_NAME = "exit";
     private List<File> fileList;
-    private List<FunctionNode> functionList;
+    private List<FunctionNode> functionNodeList;
     private List<ReturnStatement> returnList;
+    private List<FunctionInfo> functionList = new ArrayList<FunctionInfo>();
     private String source;
 
     public static void main(String args[]) {
         try {
-            Tracer tracer = new Tracer();
-            tracer.includes(".*\\.js$");
-            tracer.instrumentSources(new File("C:/Users/kazm/workspace/XikiEngine/WebContent/html"), new File("dist/instrumented"));
+            Profiler profiler = new Profiler();
+            profiler.includes(".*\\.js$");
+            profiler.instrumentSources(new File("C:/Users/kazm/workspace/XikiEngine/WebContent/html"), new File("dist/instrumented"));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
     
-    public Tracer() {
+    public Profiler() {
         fileList = new ArrayList<File>();
-        functionList = new ArrayList<FunctionNode>();
+        functionNodeList = new ArrayList<FunctionNode>();
         returnList = new ArrayList<ReturnStatement>();
     }
 
@@ -92,18 +93,18 @@ public class Tracer extends Instrument {
             @Override
             public boolean visit(AstNode node) {
                 if (node instanceof FunctionNode) {
-                    functionList.add((FunctionNode)node);
+                    functionNodeList.add((FunctionNode)node);
                 } else if (node instanceof ReturnStatement) {
                     returnList.add((ReturnStatement)node);
                 }
                 return true;
             }
         });
-        for (FunctionNode node : functionList) {
+        for (FunctionNode node : functionNodeList) {
             insrumentFunction(fileId, node);
         }
         for (ReturnStatement node : returnList) {
-            instrumentReturn(fileId, node);
+            instrumentReturn(node);
         }
         return preProcess(file, fileId) + root.toSource();
     }
@@ -147,25 +148,37 @@ public class Tracer extends Instrument {
         propertyGet.setTarget(objName);
         propertyGet.setProperty(callName);
         FunctionCall call = new FunctionCall();
+        FunctionInfo info = new FunctionInfo();
+        info.setFileId(fileId);
+        info.setFunctionId(functionList.size());
+        info.setName(resolveName(node));
+        info.setRow(node.getLineno());
+        info.setCol(getColumn(node));
+        functionList.add(info);
         call.setTarget(propertyGet);
         NumberLiteral functionId = new NumberLiteral();
         functionId.setValue(String.valueOf(functionList.size()));
         call.addArgument(functionId);
-        NumberLiteral idLiteral = new NumberLiteral();
-        idLiteral.setValue(String.valueOf(fileId));
-        call.addArgument(idLiteral);
-        StringLiteral nameLiteral = new StringLiteral();
-        nameLiteral.setQuoteCharacter('\'');
-        nameLiteral.setValue(resolveName(node));
-        call.addArgument(nameLiteral);
         ExpressionStatement stmt = new ExpressionStatement();
         stmt.setExpression(call);
-        NumberLiteral line = new NumberLiteral();
-        line.setValue(String.valueOf(node.getLineno()));
-        call.addArgument(line);
-        NumberLiteral column = new NumberLiteral();
-        column.setValue(String.valueOf(getColumn(node)));
-        call.addArgument(column);
+//      NumberLiteral functionId = new NumberLiteral();
+//      functionId.setValue(String.valueOf(functionList.size()));
+//      call.addArgument(functionId);
+//        NumberLiteral idLiteral = new NumberLiteral();
+//        idLiteral.setValue(String.valueOf(fileId));
+//        call.addArgument(idLiteral);
+//        StringLiteral nameLiteral = new StringLiteral();
+//        nameLiteral.setQuoteCharacter('\'');
+//        nameLiteral.setValue(resolveName(node));
+//        call.addArgument(nameLiteral);
+//      ExpressionStatement stmt = new ExpressionStatement();
+//      stmt.setExpression(call);
+//        NumberLiteral line = new NumberLiteral();
+//        line.setValue(String.valueOf(node.getLineno()));
+//        call.addArgument(line);
+//        NumberLiteral column = new NumberLiteral();
+//        column.setValue(String.valueOf(getColumn(node)));
+//        call.addArgument(column);
 
         AstNode body = node.getBody();
         Node first = body.getFirstChild();
@@ -177,13 +190,9 @@ public class Tracer extends Instrument {
         Node last = body.getLastChild();
         if (!(last instanceof ReturnStatement)) {
             ReturnStatement returnNode = new ReturnStatement();
-            instrumentReturn(fileId, returnNode);
+            instrumentReturn(returnNode);
             body.addChild(returnNode);
         }
-    }
-    
-    private String createId(String sourceId, FunctionNode node) {
-        return sourceId + ":" + node.getLineno() + ":" + getColumn(node);
     }
     
     private int getColumn(AstNode node) {
@@ -199,7 +208,7 @@ public class Tracer extends Instrument {
         return pos;
     }
     
-    protected void instrumentReturn(int funcId, ReturnStatement node) {
+    protected void instrumentReturn(ReturnStatement node) {
         Name exitName = new Name();
         exitName.setIdentifier(EXIT_NAME);
         PropertyGet propertyGet = new PropertyGet();
@@ -209,9 +218,6 @@ public class Tracer extends Instrument {
         propertyGet.setProperty(exitName);
         FunctionCall call = new FunctionCall();
         call.setTarget(propertyGet);
-        NumberLiteral id = new NumberLiteral();
-        id.setValue(String.valueOf(funcId));
-        call.addArgument(id);
 
         AstNode returnValue = node.getReturnValue();
         if (returnValue != null) {

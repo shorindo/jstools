@@ -34,12 +34,12 @@ import org.mozilla.javascript.ast.AstRoot;
  * 
  */
 public class TracerTest {
-    Tracer tracer;
+    Profiler tracer;
     File file;
     
     @Before
     public void setUp() throws Exception {
-        tracer = new Tracer();
+        tracer = new Profiler();
         file = File.createTempFile("test", ".js");
     }
     
