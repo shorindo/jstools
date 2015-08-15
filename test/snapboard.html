@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="user-scalable=no, width=device-width"/>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+body { padding: 0; margin:0; overflow:hidden; }
+div#console {
+    height:200px;
+    background:black;
+    color:white;
+    overflow-y:scroll;
+    position:fixed;
+    width:100%;
+    z-index:9999;
+}
+div#snapboard {
+    padding:0;
+    margin:0;
+    position:absolute;
+}
+svg { width:100%; height:100%; }
+@font-face {
+    font-family: ionicons;
+    src: url(ionicons.ttf) format("truetype");
+}
+</style>
+<script src="snapboard.js"></script>
+<script type="text/javascript">
+<!--
+function onResize() {
+    var canvas = document.getElementById('snapboard');
+    canvas.style.width = window.innerWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
+}
+window.addEventListener('load', onResize);
+window.addEventListener('resize', onResize);
+//-->
+</script>
+</head>
+<body>
+<!--div id="console"></div-->
+<div id="snapboard"></div>
+</body>
+</html>

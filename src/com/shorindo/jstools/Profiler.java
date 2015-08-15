@@ -15,12 +15,14 @@
  */
 package com.shorindo.jstools;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
@@ -59,7 +61,7 @@ public class Profiler extends Instrument {
             Profiler profiler = new Profiler();
             profiler.includes(".*\\.js$");
             profiler.instrumentSources(
-                    new File("C:/Users/kazm/workspace/XikiEngine/WebContent/html"),
+                    new File("test"),
                     new File("instrumented"));
         } catch (IOException e) {
             e.printStackTrace();
@@ -88,6 +90,7 @@ public class Profiler extends Instrument {
                 String srcPath = srcDir.toURI().toString();
                 filePath = filePath.substring(srcPath.length());
                 fileList.add(filePath);
+                generateSourceView(srcDir, destDir, filePath);
             } else {
                 if (dest.exists() && dest.lastModified() >= src.lastModified())
                     continue;
@@ -96,6 +99,47 @@ public class Profiler extends Instrument {
             }
         }
         generateTools(destDir);
+    }
+    
+    protected void generateSourceView(File srcDir, File destDir, String path) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(new File(srcDir, path)));
+        File destFile = new File(destDir, ".jstools/sources/" + path + ".html");
+        destFile.getParentFile().mkdirs();
+        PrintWriter writer = new PrintWriter(new FileWriter(destFile));
+        writer.println("<!doctype html>");
+        writer.println("<html>");
+        writer.println("<head>");
+        writer.println("<style type=\"text/css\">");
+        writer.println("body { font-family:\"monospace\"; }");
+        writer.println("pre.line { margin:0 0 0 0px; min-height:1em; }");
+        writer.println("</style>");
+        writer.println("<script type=\"text/javascript\">");
+        writer.println("window.onload = function() {");
+        writer.println("  var line = document.getElementById(location.hash.replace(/^#/, ''));");
+        writer.println("  if (line) line.style.background = 'yellow';");
+        writer.println("};");
+        writer.println("</script>");
+        writer.println("</head>"); 
+        writer.println("<body>");
+        writer.println("<ol>");
+        String line;
+        int lineNumber = 1;
+        while ((line = reader.readLine()) != null) {
+            line = line.replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll("\"", "&quot;");
+            writer.print("<li><pre class=\"line\" id=\"line-" + lineNumber + "\">");
+            writer.print("<a name=\"line-" + lineNumber + "\"></a>");
+            writer.print(line);
+            writer.println("</pre></li>");
+            lineNumber++;
+        }
+        writer.println("</ol>"); 
+        writer.println("</body>"); 
+        writer.println("</html>");
+        writer.close();
+        reader.close();
     }
     
     public String instrument(File source) throws IOException {
@@ -180,7 +224,7 @@ public class Profiler extends Instrument {
 
         FunctionInfo info = new FunctionInfo();
         info.setFileId(fileId);
-        info.setFunctionId(functionList.size());
+        info.setFunctionId(functionList.size() + 1);
         info.setName(resolveName(node));
         info.setRow(node.getLineno());
         info.setCol(getColumn(node));

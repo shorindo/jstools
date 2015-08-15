@@ -7,7 +7,7 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
     }
-    function dom(data) {
+    function createDom(data) {
         var f = functionMap.functions[data.id];
         var node = document.createElement('div');
         node.id = 'trace-' + data.id;
@@ -15,11 +15,15 @@
         var icon = node.appendChild(document.createElement('a'));
         icon.className = 'icon';
         icon.onclick = toggle;
+        var file = functionMap.files[f.fileId];
         var name = node.appendChild(document.createElement('a'));
-        name.title = functionMap.files[f.fileId] + ':' + f.row + ':' + f.col;
         name.appendChild(document.createTextNode(functionMap.functions[data.id].name + '(' + data.args.join(', ') + ')'));
+        if (file) {
+            name.title = file + ':' + f.row + ':' + f.col;
+            name.onclick = showSource;
+        }
         for (var i = 0; i < data.children.length; i++) {
-            node.appendChild(dom(data.children[i]));
+            node.appendChild(createDom(data.children[i]));
         }
         return node;
     }
@@ -32,6 +36,10 @@
             removeClass(target, 'close');
             addClass(target, 'open');
         }
+    }
+    function showSource(evt) {
+        var p = evt.target.title.split(/:/);
+        window.open("sources/" + p[0] + ".html#line-" + p[1], "source");
     }
     function hasClass(node, name) {
         if (!node.className) {
@@ -56,6 +64,6 @@
     }
     window.addEventListener('load', function() {
         var root = JSON.parse(localStorage.getItem("jstools.profile"));
-        document.getElementById('content').appendChild(dom(root));
+        document.getElementById('content').appendChild(createDom(root));
     });
 })();

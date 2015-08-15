@@ -90,6 +90,7 @@ public abstract class Instrument {
         }
         writer.println("  ],");
         writer.println("  'functions':[");
+        writer.println("    { id:0, fileId:-1, name:'<root>', row:0, col:0 },");
         for (FunctionInfo info : functionList) {
             writer.print("    { id:");
             writer.print(info.getFunctionId());

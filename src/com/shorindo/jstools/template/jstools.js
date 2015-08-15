@@ -72,8 +72,8 @@ if (!("__jstools__" in window)) {
         function createControl() {
             var icon = document.createElement("div");
             icon.style.position = "fixed";
-            icon.style.width = "20px";
-            icon.style.height = "20px";
+            icon.style.width = "10px";
+            icon.style.height = "10px";
             icon.style.top = "10px";
             icon.style.right = "10px";
             icon.style.background = "red";
