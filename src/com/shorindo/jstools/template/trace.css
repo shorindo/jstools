@@ -1,3 +1,6 @@
+div#nav {
+    text-align: right;
+}
 #content {
 	font-family: monospace;
 }

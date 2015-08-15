@@ -76,6 +76,9 @@ public abstract class Instrument {
         copyFromResource("template/trace.css", new File(dir, "trace.css"));
         copyFromResource("template/trace.html", new File(dir, "trace.html"));
         copyFromResource("template/trace.js", new File(dir, "trace.js"));
+        copyFromResource("template/profile.css", new File(dir, "profile.css"));
+        copyFromResource("template/profile.html", new File(dir, "profile.html"));
+        copyFromResource("template/profile.js", new File(dir, "profile.js"));
         
         //
         File mapFile = new File(dir, "function_map.js");

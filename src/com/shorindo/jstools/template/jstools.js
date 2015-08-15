@@ -57,7 +57,8 @@ if (!("__jstools__" in window)) {
         function report() {
             localStorage.setItem('jstools.profile', JSON.stringify(this.tree()));
             this.clear();
-            var w = window.open(".jstools/trace.html", "trace");
+            window.open(".jstools/trace.html", "trace");
+            //window.open(".jstools/profile.html", "profile");
         }
         function tree() {
             function dig(node) {
