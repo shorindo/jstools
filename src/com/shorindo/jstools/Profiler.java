@@ -17,12 +17,16 @@ package com.shorindo.jstools;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,28 +52,52 @@ public class Profiler extends Instrument {
     private static String OBJECT_NAME = "__jstools__";
     private static String ENTER_NAME = "enter";
     private static String EXIT_NAME = "exit";
-    private List<File> fileList;
-    private List<FunctionNode> functionNodeList;
-    private List<ReturnStatement> returnList;
-    private List<FunctionInfo> functionList = new ArrayList<FunctionInfo>();
     private String source;
 
     public static void main(String args[]) {
         try {
             Profiler profiler = new Profiler();
             profiler.includes(".*\\.js$");
-            profiler.instrumentSources(new File("C:/Users/kazm/workspace/XikiEngine/WebContent/html"), new File("dist/instrumented"));
+            profiler.instrumentSources(
+                    new File("C:/Users/kazm/workspace/XikiEngine/WebContent/html"),
+                    new File("instrumented"));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
     
     public Profiler() {
-        fileList = new ArrayList<File>();
-        functionNodeList = new ArrayList<FunctionNode>();
-        returnList = new ArrayList<ReturnStatement>();
+        fileList = new ArrayList<String>();
     }
-
+    
+    public void instrumentSources(File srcDir, File destDir) throws IOException {
+        String sourcePath = srcDir.getAbsolutePath();
+        List<File> sourceList = visit(srcDir);
+        for (File src : sourceList) {
+            String path = src.getAbsolutePath().substring(sourcePath.length());
+            File dest = new File(destDir, path);
+            dest.getParentFile().mkdirs();
+            if (matchPattern(path)) {
+                log("[instrument]" + dest.getAbsolutePath());
+                String instrumented = instrument(src);
+                Writer writer = new FileWriter(dest);
+                writer.write(instrumented);
+                writer.close();
+                
+                String filePath = src.toURI().toString();
+                String srcPath = srcDir.toURI().toString();
+                filePath = filePath.substring(srcPath.length());
+                fileList.add(filePath);
+            } else {
+                if (dest.exists() && dest.lastModified() >= src.lastModified())
+                    continue;
+                log("[copy]" + dest.getAbsolutePath());
+                Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        generateTools(destDir);
+    }
+    
     public String instrument(File source) throws IOException {
         Reader reader = new FileReader(source);
         int len = 0;
@@ -85,8 +113,9 @@ public class Profiler extends Instrument {
     }
 
     private String _instrument(File file, String source) throws IOException {
-        fileList.add(file);
         int fileId = fileList.size();
+        final List<FunctionNode> functionNodeList = new ArrayList<FunctionNode>();
+        final List<ReturnStatement> returnList = new ArrayList<ReturnStatement>();
 
         AstNode root = parse(new StringReader(source));
         root.visit(new NodeVisitor() {
@@ -123,7 +152,7 @@ public class Profiler extends Instrument {
     public String preProcess(File file, int fileId) {
         StringBuffer sb = new StringBuffer();
         try {
-            InputStream is = getClass().getResourceAsStream("js/jstools.js");
+            InputStream is = getClass().getResourceAsStream("template/jstools.js");
             InputStreamReader reader = new InputStreamReader(is, "UTF-8");
             char buf[] = new char[2048];
             int len = 0;
@@ -148,6 +177,7 @@ public class Profiler extends Instrument {
         propertyGet.setTarget(objName);
         propertyGet.setProperty(callName);
         FunctionCall call = new FunctionCall();
+
         FunctionInfo info = new FunctionInfo();
         info.setFileId(fileId);
         info.setFunctionId(functionList.size());
@@ -155,30 +185,13 @@ public class Profiler extends Instrument {
         info.setRow(node.getLineno());
         info.setCol(getColumn(node));
         functionList.add(info);
+
         call.setTarget(propertyGet);
         NumberLiteral functionId = new NumberLiteral();
-        functionId.setValue(String.valueOf(functionList.size()));
+        functionId.setValue(String.valueOf(info.getFunctionId()));
         call.addArgument(functionId);
         ExpressionStatement stmt = new ExpressionStatement();
         stmt.setExpression(call);
-//      NumberLiteral functionId = new NumberLiteral();
-//      functionId.setValue(String.valueOf(functionList.size()));
-//      call.addArgument(functionId);
-//        NumberLiteral idLiteral = new NumberLiteral();
-//        idLiteral.setValue(String.valueOf(fileId));
-//        call.addArgument(idLiteral);
-//        StringLiteral nameLiteral = new StringLiteral();
-//        nameLiteral.setQuoteCharacter('\'');
-//        nameLiteral.setValue(resolveName(node));
-//        call.addArgument(nameLiteral);
-//      ExpressionStatement stmt = new ExpressionStatement();
-//      stmt.setExpression(call);
-//        NumberLiteral line = new NumberLiteral();
-//        line.setValue(String.valueOf(node.getLineno()));
-//        call.addArgument(line);
-//        NumberLiteral column = new NumberLiteral();
-//        column.setValue(String.valueOf(getColumn(node)));
-//        call.addArgument(column);
 
         AstNode body = node.getBody();
         Node first = body.getFirstChild();

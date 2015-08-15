@@ -1,0 +1,23 @@
+#content {
+	font-family: monospace;
+}
+.trace {
+	margin-left:20px;
+}
+.trace.open > a,
+.trace.close > a {
+	text-decoration: none;
+	cursor: pointer;
+}
+.trace.open > a.icon:before {
+	content: "+ ";
+}
+.trace.close > a.icon:before {
+	content: "- ";
+}
+.trace.open > div.trace {
+	display: none;
+}
+.trace.close > div.trace {
+	display: default;
+}

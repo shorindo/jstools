@@ -16,9 +16,13 @@
 package com.shorindo.jstools;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -37,30 +41,88 @@ import org.mozilla.javascript.ast.VariableInitializer;
 public abstract class Instrument {
     private List<Pattern> includeList = new ArrayList<Pattern>();
     private List<Pattern> excludeList = new ArrayList<Pattern>();
+    protected List<String> fileList;
+    protected List<FunctionInfo> functionList = new ArrayList<FunctionInfo>();
 
     public abstract String instrument(File source) throws IOException;
-//    public abstract AstNode instrument(String sourceId, String source) throws IOException;
-//    public abstract String preProcess();
-//    public abstract String postProcess();
     
-    public void instrumentSources(File srcDir, File destDir) throws IOException {
-        String sourcePath = srcDir.getAbsolutePath();
-        List<File> sourceList = visit(srcDir);
-        for (File src : sourceList) {
-            String path = src.getAbsolutePath().substring(sourcePath.length());
-            File dest = new File(destDir, path);
-            dest.getParentFile().mkdirs();
-            if (matchPattern(path)) {
-                log("[instrument]" + dest.getAbsolutePath());
-                String instrumented = instrument(src);
-                Writer writer = new FileWriter(dest);
-                writer.write(instrumented);
-                writer.close();
-            } else {
-                log("[copy]" + dest.getAbsolutePath());
-                Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
+//    public void instrumentSources(File srcDir, File destDir) throws IOException {
+//        String sourcePath = srcDir.getAbsolutePath();
+//        List<File> sourceList = visit(srcDir);
+//        for (File src : sourceList) {
+//            String path = src.getAbsolutePath().substring(sourcePath.length());
+//            File dest = new File(destDir, path);
+//            dest.getParentFile().mkdirs();
+//            if (matchPattern(path)) {
+//                log("[instrument]" + dest.getAbsolutePath());
+//                String instrumented = instrument(src);
+//                Writer writer = new FileWriter(dest);
+//                writer.write(instrumented);
+//                writer.close();
+//            } else {
+//                if (dest.exists() && dest.lastModified() >= src.lastModified())
+//                    continue;
+//                log("[copy]" + dest.getAbsolutePath());
+//                Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//            }
+//        }
+//        generateTools(destDir);
+//    }
+    
+    public void generateTools(File dest) throws IOException {
+        File dir = new File(dest, ".jstools");
+        dir.mkdirs();
+        //
+        copyFromResource("template/trace.css", new File(dir, "trace.css"));
+        copyFromResource("template/trace.html", new File(dir, "trace.html"));
+        copyFromResource("template/trace.js", new File(dir, "trace.js"));
+        
+        //
+        File mapFile = new File(dir, "function_map.js");
+        PrintWriter writer = new PrintWriter(new FileWriter(mapFile));
+        writer.println("var functionMap = {");
+        writer.println("  'files':[");
+        for (String fileName : fileList) {
+            writer.print("    '");
+            writer.print(fileName);
+            writer.print("',");
+            writer.println();
         }
+        writer.println("  ],");
+        writer.println("  'functions':[");
+        for (FunctionInfo info : functionList) {
+            writer.print("    { id:");
+            writer.print(info.getFunctionId());
+            writer.print(", fileId:");
+            writer.print(info.getFileId());
+            writer.print(", name:'");
+            writer.print(info.getName());
+            writer.print("', row:");
+            writer.print(info.getRow());
+            writer.print(", col:");
+            writer.print(info.getCol());
+            writer.print(" },");
+            writer.println("");
+        }
+        writer.println("  ]");
+        writer.println("};\n");
+        writer.close();
+    }
+    
+    public void copyFromResource(String resourceName, File dest) throws IOException {
+        InputStream is = getClass().getResourceAsStream(resourceName);
+        File parent = dest.getParentFile();
+        if (!parent.exists()) {
+            parent.mkdirs();
+        }
+        OutputStream os = new FileOutputStream(dest);
+        int len = 0;
+        byte[] buff = new byte[4096];
+        while ((len = is.read(buff)) > 0) {
+            os.write(buff, 0, len);
+        }
+        os.close();
+        is.close();
     }
     
     private List<NamedNode> namedList = new ArrayList<NamedNode>();
@@ -128,11 +190,11 @@ public abstract class Instrument {
                 }
             }
         }
-        namedNode.setName(name.replaceAll("\\.prototype", ""));
+        namedNode.setName(name.replaceAll("\\.prototype", "").replaceAll("^$", "<anonymous>"));
         return namedNode.getName();
     }
 
-    private List<File> visit(File dir) {
+    protected List<File> visit(File dir) {
         List<File> result = new ArrayList<File>();
         File files[] = dir.listFiles();
         for (File file : files) {
@@ -172,7 +234,7 @@ public abstract class Instrument {
         System.err.println("java " + this.getClass().getName() + " [-p pattern] source destination");
     }
     
-    private void log(String msg) {
+    protected void log(String msg) {
         System.out.println(msg);
     }
     
