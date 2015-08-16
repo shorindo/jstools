@@ -7,3 +7,39 @@ pre.line {
 	min-height:1em;
 	font-size: 11pt;
 }
+pre.line.hilit {
+	background: yellow;
+}
+#content-profile {
+	height: 100%;
+}
+#content-trace,
+#content-source {
+	display: none;
+	height: 400px;
+}
+#content {
+    font-family: monospace;
+}
+.trace {
+    margin-left:20px !important;
+    font-family: monospace;
+    font-size: 11pt;
+}
+.trace.open > a,
+.trace.close > a {
+    text-decoration: none;
+    cursor: pointer;
+}
+.trace.open > a.icon:before {
+    content: "+ ";
+}
+.trace.close > a.icon:before {
+    content: "- ";
+}
+.trace.open > div.trace {
+    display: none;
+}
+.trace.close > div.trace {
+    display: default;
+}
