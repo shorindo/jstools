@@ -106,21 +106,21 @@ public class Profiler extends Instrument {
         File destFile = new File(destDir, ".jstools/sources/" + path + ".html");
         destFile.getParentFile().mkdirs();
         PrintWriter writer = new PrintWriter(new FileWriter(destFile));
-        writer.println("<!doctype html>");
-        writer.println("<html>");
-        writer.println("<head>");
-        writer.println("<style type=\"text/css\">");
-        writer.println("body { font-family:\"monospace\"; }");
-        writer.println("pre.line { margin:0 0 0 0px; min-height:1em; }");
-        writer.println("</style>");
-        writer.println("<script type=\"text/javascript\">");
-        writer.println("window.onload = function() {");
-        writer.println("  var line = document.getElementById(location.hash.replace(/^#/, ''));");
-        writer.println("  if (line) line.style.background = 'yellow';");
-        writer.println("};");
-        writer.println("</script>");
-        writer.println("</head>"); 
-        writer.println("<body>");
+//        writer.println("<!doctype html>");
+//        writer.println("<html>");
+//        writer.println("<head>");
+//        writer.println("<style type=\"text/css\">");
+//        writer.println("body { font-family:\"monospace\"; }");
+//        writer.println("pre.line { margin:0 0 0 0px; min-height:1em; }");
+//        writer.println("</style>");
+//        writer.println("<script type=\"text/javascript\">");
+//        writer.println("window.onload = function() {");
+//        writer.println("  var line = document.getElementById(location.hash.replace(/^#/, ''));");
+//        writer.println("  if (line) line.style.background = 'yellow';");
+//        writer.println("};");
+//        writer.println("</script>");
+//        writer.println("</head>"); 
+//        writer.println("<body>");
         writer.println("<ol>");
         String line;
         int lineNumber = 1;
@@ -136,8 +136,8 @@ public class Profiler extends Instrument {
             lineNumber++;
         }
         writer.println("</ol>"); 
-        writer.println("</body>"); 
-        writer.println("</html>");
+//        writer.println("</body>"); 
+//        writer.println("</html>");
         writer.close();
         reader.close();
     }

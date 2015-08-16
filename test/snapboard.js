@@ -180,14 +180,17 @@ Pad : (function() {
                     var line = new Line(0, 0);
                     line.importFromDOM(child);
                     this.addShape(line);
+                    break;
                 case 'rect':
                     var rect = new Rect(0, 0);
                     rect.importFromDOM(child);
                     this.addShape(rect);
+                    break;
                 case 'circle':
                     var circle = new Circle(0, 0);
                     circle.importFromDOM(child);
                     this.addShape(circle);
+                    break;
                 case 'text':
                     var text = new Text(0, 0);
                     text.importFromDOM(child);
@@ -202,6 +205,7 @@ Pad : (function() {
                     }
                     text.setText(lines);
                     this.addShape(text);
+                    break;
                 }
             }
         },

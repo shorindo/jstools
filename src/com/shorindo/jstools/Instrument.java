@@ -73,12 +73,13 @@ public abstract class Instrument {
         File dir = new File(dest, ".jstools");
         dir.mkdirs();
         //
-        copyFromResource("template/trace.css", new File(dir, "trace.css"));
-        copyFromResource("template/trace.html", new File(dir, "trace.html"));
-        copyFromResource("template/trace.js", new File(dir, "trace.js"));
-        copyFromResource("template/profile.css", new File(dir, "profile.css"));
-        copyFromResource("template/profile.html", new File(dir, "profile.html"));
-        copyFromResource("template/profile.js", new File(dir, "profile.js"));
+        copyFromResource("template/analyze.css", new File(dir, "analyze.css"));
+        copyFromResource("template/analyze.html", new File(dir, "analyze.html"));
+        copyFromResource("template/analyze.js", new File(dir, "analyze.js"));
+        copyFromResource("template/lib/jquery.js", new File(dir, "lib/jquery.js"));
+        copyFromResource("template/lib/kickstart.js", new File(dir, "lib/kickstart.js"));
+        copyFromResource("template/lib/w2ui.css", new File(dir, "lib/w2ui.css"));
+        copyFromResource("template/lib/w2ui.js", new File(dir, "lib/w2ui.js"));
         
         //
         File mapFile = new File(dir, "function_map.js");
