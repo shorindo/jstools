@@ -4,13 +4,14 @@ $(function() {
     
     function initProfile() {
         var summary = {};
+        var records = [];
 
-        function calc(data) {
-            data.effective = 0;
+        function calcSummary(data) {
             var sum = summary[data.id];
             if (data.id in summary) {
                 sum.count++;
                 sum.elapsed += data.elapsed;
+                sum.effective += data.effective;
             } else {
                 sum = summary[data.id] = {
                         id: data.id,
@@ -18,19 +19,25 @@ $(function() {
                         name: functionMap.functions[data.id].name,
                         count: 1,
                         elapsed: data.elapsed,
-                        effective: data.elapsed
+                        effective: data.effective
                     };
             }
             for (var i = 0; i < data.children.length; i++) {
                 calc(data.children[i]);
             }
+        }
+        function calcEffective(data) {
+            data.effective = data.elapsed;
             for (var i = 0; i < data.children.length; i++) {
-                sum.effective -= data.children[i].effective;
+                var child = data.children[i];
+                data.effective -= child.elapsed;
+                calcEffective(child);
             }
         }
 
-        calc(root);
-        var records = [];
+        calcEffective(root);
+        calcSummary(root);
+
         for (var key in summary) {
             var rec = summary[key];
             records.push({
@@ -46,7 +53,7 @@ $(function() {
                 (a.effective > b.effective ? -1 : 0);
         });
 
-        var grid = $('#content-profile').w2grid({
+        $('#content-profile').w2grid({
             name: 'profile',
             show: {
                 toolbar: false,
