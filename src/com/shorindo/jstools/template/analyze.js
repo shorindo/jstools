@@ -23,7 +23,7 @@ $(function() {
                     };
             }
             for (var i = 0; i < data.children.length; i++) {
-                calc(data.children[i]);
+                calcSummary(data.children[i]);
             }
         }
         function calcEffective(data) {
