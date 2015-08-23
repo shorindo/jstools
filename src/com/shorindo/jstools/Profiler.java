@@ -61,7 +61,7 @@ public class Profiler extends Instrument {
             Profiler profiler = new Profiler();
             profiler.includes(".*\\.js$");
             profiler.instrumentSources(
-                    new File("test"),
+                    new File("tools"),
                     new File("instrumented"));
         } catch (IOException e) {
             e.printStackTrace();

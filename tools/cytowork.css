@@ -1,0 +1,18 @@
+body { 
+  font: 14px helvetica neue, helvetica, arial, sans-serif;
+}
+#qunit {
+	width: 50%;
+}
+#cyto-canvas {
+	position: fixed;
+	top: 10px;
+	left: 51%;
+    width: 48%;
+	height: 97%;
+	background: #F0F0F0;
+}
+#cyto-message {
+	position: fixed;
+	padding: 1px 5px 1px 5px;
+}
