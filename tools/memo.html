@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>メモ帳</title>
+<style type="text/css">
+@media screen {
+#printable { display:none; }
+}
+@media print {
+#menu { display:none; }
+#editor { display:none; }
+#printable { display:block; }
+}
+body {
+  margin:0;
+  height:100%;
+  overflow:hidden;
+}
+#menu {
+  width:200px;
+  height:100%;
+  position:absolute;
+  right:0;
+  background:gray;
+  transition:all 0.2s;
+  z-index:9999;
+}
+#menu.open {
+  transform: translate(200px, 0);
+  -webkit-transform: translate(200px, 0);
+}
+#menu-tab {
+  width:20px;
+  height:20px;
+  left:-20px;
+  top:0px;
+  position:absolute;
+  background-color:rgba(192,192,192,0.3);
+}
+#menu-add {
+  width:20px;
+  height:20px;
+  background-color:rgba(192,192,192,1);
+}
+#menu-search {
+  height:18px;
+  vertical-align:bottom;
+}
+#menu-bar {
+  top:0;
+}
+#menu-list {
+  height: 100%;
+  overflow: auto;
+}
+#menu .item {
+    border:1px solid gray;
+    background-color:white;
+    border-radius: 5px;
+    margin:5px;
+    padding:3px;
+    cursor:pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-text-overflow: ellipsis;
+}
+#menu .item.selected {
+    background-color: #CCFFCC;
+}
+#editor {
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    /*overflow:hidden;*/
+}
+#printable {
+    font-size:10pt;
+    font-family:MS Gothic;
+    white-space:pre-wrap;
+}
+</style>
+<script type="text/javascript" src="memo.js"></script>
+</head>
+  <body>
+    <div id="menu">
+      <div id="menu-bar">
+        <svg id="menu-add" xmlns="http://www.w3.org/2000/svg">
+          <path stroke="gray" stroke-width="2px" d="M 5 10 L 15 10 M 10 5 L 10 15"/>
+        </svg>
+        <!--input id="menu-search" type="text"-->
+      </div>
+      <div id="menu-list"></div>
+      <svg id="menu-tab" xmlns="http://www.w3.org/2000/svg">
+        <path stroke="gray" stroke-width="2px" d="M 4 5 L 16 5 M 4 10 L 16 10 M 4 15 L 16 15"/>
+      </svg>
+    </div>
+    <textarea id="editor"></textarea>
+    <div id="printable"></div>
+  </body>
+</html>

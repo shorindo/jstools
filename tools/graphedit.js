@@ -15,121 +15,6 @@
  */
 var cy;
 (function() {
-    var nodes = [
-           {
-               "data": {
-                   "id": "A"
-               }
-           },
-           {
-               "data": {
-                   "id": "B"
-               }
-           },
-           {
-               "data": {
-                   "id": "C"
-               }
-           },
-           {
-               "data": {
-                   "id": "D"
-               }
-           },
-           {
-               "data": {
-                   "id": "E"
-               }
-           },
-           {
-               "data": {
-                   "id": "F"
-               }
-           },
-           {
-               "data": {
-                   "id": "G"
-               }
-           },
-           {
-               "data": {
-                   "id": "H"
-               }
-           }
-       ];
-    var edges = [
-        {
-            "data": {
-                "id": "AB",
-                "source": "A",
-                "target": "B"
-            }
-        },
-        {
-            "data": {
-                "id": "BC",
-                "source": "B",
-                "target": "C"
-            }
-        },
-        {
-            "data": {
-                "id": "BD",
-                "source": "B",
-                "target": "D"
-            }
-        },
-        {
-            "data": {
-                "id": "BE",
-                "source": "B",
-                "target": "E"
-            }
-        },
-        {
-            "data": {
-                "id": "CF",
-                "source": "C",
-                "target": "F"
-            }
-        },
-        {
-            "data": {
-                "id": "CG",
-                "source": "C",
-                "target": "G"
-            }
-        },
-        {
-            "data": {
-                "id": "DH",
-                "source": "D",
-                "target": "H"
-            }
-        },
-        {
-            "data": {
-                "id": "ED",
-                "source": "E",
-                "target": "D"
-            }
-        },
-        {
-            "data": {
-                "id": "FH",
-                "source": "F",
-                "target": "H"
-            }
-        },
-        {
-            "data": {
-                "id": "GH",
-                "source": "G",
-                "target": "H"
-            }
-        }
-    ];
-
     function init() {
         cy = cytoscape({
             container: document.getElementById('graphedit'),
@@ -152,33 +37,88 @@ var cy;
                     }
                 },
                 {
-                    selector: '.hilit',
+                    selector: ':selected',
                     css: {
-                        'background-color': 'red',
-                        'line-color': 'red',
-                        'target-arrow-color': 'red'
+                        'background-color': 'green',
+                        'line-color': 'green',
+                        'target-arrow-color': 'green',
+                        'source-arrow-color': 'green'
                     }
                 }
             ],
             elements: {
-                nodes: nodes,
-                edges: edges
+                nodes: [],
+                edges: []
             },
             layout: {
-                name: 'cose',
-                animate             : false,
-                fit                 : false,
-                padding             : 50,
-                randomize           : true,
-                debug               : false,
-            },
-            ready: function() {
-//                var div = this.container().appendChild(document.createElement('div'));
-//                div.id = "cyto-message";
-//                div.innerHTML =
-//                    "ノード数：" + nodes.length + " 枝数：" + edges.length;
+                name: 'preset',
+                fit: false
             }
         });
+        cy.on('tap', function(evt) {
+            var target = evt.cyTarget;
+            if (target == cy) {
+                cy.add({
+                    group: 'nodes',
+                    position: evt.cyPosition
+                });
+            } else if (target.group() == 'nodes'){
+                if (evt.originalEvent.ctrlKey) {
+                    cy.nodes(':selected').forEach(function(source) {
+                        cy.add({
+                            group: 'edges',
+                            data: { source: source.id(), target: target.id() }
+                        });
+                    });
+                }
+            }
+        });
+        window.addEventListener('keydown', function(evt) {
+            switch(evt.key) {
+            case 'Delete':
+                cy.elements(':selected').remove();
+                break;
+            case 'Escape':
+                cy.elements(':selected').unselect();
+                break;
+            }
+        });
+        document.getElementById('menu-icon').addEventListener('click', function(evt) {
+            var result = {
+                nodes: [],
+                edges: []
+            };
+            cy.nodes().forEach(function(n) {
+                result.nodes.push({
+                    group: 'nodes',
+                    id: n.id(),
+                    position: { x: n.position().x, y: n.position().y }
+                });
+            });
+            cy.edges().forEach(function(e) {
+                result.edges.push({
+                    group: 'edges',
+                    id: e.id(),
+                    data: {
+                        source: e.source().id(),
+                        target: e.target().id()
+                    }
+                });
+            });
+            console.log(JSON.stringify(result, null, 4));
+            localStorage.setItem("graphedit", JSON.stringify(result));
+        });
+        var data = localStorage.getItem('graphedit');
+        if (data) {
+            data = JSON.parse(data);
+            console.log(JSON.stringify(data, null, 4));
+            for (var i = 0; i < data.nodes.length; i++) {
+                cy.add(data.nodes[i]);
+            }
+            for (var i = 0; i < data.edges.length; i++) {
+                cy.add(data.edges[i]);
+            }
+        }
     }
     
     function onResize() {

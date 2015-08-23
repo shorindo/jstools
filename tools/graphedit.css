@@ -7,23 +7,11 @@ body {
 	overflow: hidden;
 	position: absolute;
 }
-#menu {
-	position: absolute;
-	bottom: 5px;
-	left: 50%;
-	margin-left: -45px;
-	/*width: 90px;*/
-	/*heigt: 30px;*/
-	border-collapse: collapse;
-	border: 0;
-	z-index: 9999;
-}
-#menu td {
-	border: 1px solid gray;
-	width: 30px;
-	height: 30px;
-	text-align: center;
-	vertical-align: middle;
-	padding: 0;
-	margin: 0;
+#menu-icon {
+  width: 20px;
+  height: 20px;
+  right: 5px;
+  top: 5px;
+  position:absolute;
+  background-color:rgba(192,192,192,0.3);
 }

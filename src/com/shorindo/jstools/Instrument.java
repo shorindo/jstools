@@ -101,7 +101,7 @@ public abstract class Instrument {
             writer.print(", fileId:");
             writer.print(info.getFileId());
             writer.print(", name:'");
-            writer.print(info.getName());
+            writer.print(info.getName().replaceAll("'", "\\\\'"));
             writer.print("', row:");
             writer.print(info.getRow());
             writer.print(", col:");
