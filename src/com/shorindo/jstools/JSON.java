@@ -210,19 +210,25 @@ public class JSON {
      */
     public static class JSONNumber extends JSONable {
         private Double number;
+        private Class<?> sourceClass = Double.class;
+
         public static JSONNumber getInstance(Object o) {
             return new JSONNumber((Double)o);
         }
         public JSONNumber(Short value) {
+            sourceClass = Short.class;
             this.number = new Double(value);
         }
         public JSONNumber(Integer value) {
+            sourceClass = Integer.class;
             this.number = new Double(value);
         }
         public JSONNumber(Long value) {
+            sourceClass = Long.class;
             this.number = new Double(value);
         }
         public JSONNumber(Float value) {
+            sourceClass = Float.class;
             this.number = new Double(value);
         }
         public JSONNumber(Double value) {
@@ -260,7 +266,17 @@ public class JSON {
             if (number == null) {
                 return NULL;
             } else {
-                return number.toString();
+                if (sourceClass == Short.class) {
+                    return new Short(number.shortValue()).toString();
+                } else if (sourceClass == Integer.class) {
+                    return new Integer(number.intValue()).toString();
+                } else if (sourceClass == Long.class) {
+                    return new Long(number.longValue()).toString();
+                } else if (sourceClass == Float.class) {
+                    return new Float(number.floatValue()).toString();
+                } else {
+                    return number.toString();
+                }
             }
         }
     }
