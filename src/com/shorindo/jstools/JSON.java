@@ -15,6 +15,7 @@
  */
 package com.shorindo.jstools;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -23,6 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 
 /**
  * 
@@ -86,8 +91,66 @@ public class JSON {
         }
         return json;
     }
-    public static JSONable parse(String json) {
-        return null;
+    public static <T>T parse(String json, Class<T> expectClass) {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("JavaScript");
+        try {
+            engine.put("json", json);
+            JSONable jsonable = (JSONable)engine.eval(
+                    "importPackage(com.shorindo.jstools);" +
+                    "var JJ = com.shorindo.jstools.JSON;" +
+                    "function js2java(o) {" +
+                    "    if (o == null || typeof o == 'undefined') {" +
+                    "        return JJ.createNull();" +
+                    "    } else if (typeof o == 'boolean') {" +
+                    "        return JJ.createBoolean(o);" +
+                    "    } else if (typeof o == 'number') {" +
+                    "        return JJ.createNumber(o);" +
+                    "    } else if (typeof o == 'string') {" +
+                    "        return JJ.createString(o);" +
+                    "    } else if (Array.isArray(o)) {" +
+                    "        var result = JJ.createArray();" +
+                    "        for (var i = 0; i < o.length; i++) {" +
+                    "            result.add(js2java(o[i]));" +
+                    "        }" +
+                    "        return result;" +
+                    "    } else if (typeof o == 'object') {" +
+                    "        var result = JJ.createObject();" +
+                    "        for (var key in o) {" +
+                    "            result.setProperty(key, js2java(o[key]));" +
+                    "        }" +
+                    "        return result;" +
+                    "    }" +
+                    "}" +
+                    "js2java(JSON.parse(json));"
+                );
+            System.out.println(jsonable.toString());
+            return jsonable.getValue(expectClass);
+        } catch (ScriptException e) {
+            throw new JSONException(e);
+        }
+    }
+    public static JSONable createNull() {
+        return new JSONNull();
+    }
+    public static JSONable createBoolean(Boolean b) {
+        return new JSONBoolean(b);
+    }
+    public static JSONable createNumber(Double d) {
+        System.out.println("createNumber(" + d + ")");
+        return new JSONNumber(d);
+    }
+    public static JSONable createString(String s) {
+        System.out.println("createString(" + s + ")");
+        return new JSONString(s);
+    }
+    public static JSONable createArray() {
+        System.out.println("createArray()");
+        return new JSONArray();
+    }
+    public static JSONable createObject() {
+        System.out.println("createArray()");
+        return new JSONObject();
     }
     private static boolean isSubclass(Object o, Class<?> c) {
         return c.isAssignableFrom(o.getClass());
@@ -97,17 +160,20 @@ public class JSON {
      * 
      */
     public static abstract class JSONable {
-        public boolean isAcceptable(Class<?> expectClass) {
-            return false;
-        }
-        public abstract <T>T createObject(Class<T> expectClass);
+        public abstract boolean isAcceptable(Class<?> expectClass);
+        public abstract <T>T getValue(Class<T> expectClass);
     }
     
     /**
      * 
      */
     public static class JSONNull extends JSONable {
-        public <T>T createObject(Class<T> expectClass) {
+        @Override
+        public boolean isAcceptable(Class<?> expectClass) {
+            return false;
+        }
+        @Override
+        public <T> T getValue(Class<T> expectClass) {
             return null;
         }
         public String toString() { return NULL; }
@@ -121,8 +187,13 @@ public class JSON {
         public JSONBoolean(Boolean value) {
             this.b = value;
         }
+        @Override
+        public boolean isAcceptable(Class<?> expectClass) {
+            return expectClass == boolean.class || Boolean.class.isAssignableFrom(expectClass);
+        }
         @SuppressWarnings("unchecked")
-        public <T>T createObject(Class<T> expectClass) {
+        @Override
+        public <T> T getValue(Class<T> expectClass) {
             return (T)b;
         }
         public String toString() {
@@ -138,24 +209,52 @@ public class JSON {
      * 
      */
     public static class JSONNumber extends JSONable {
-        private Object number;
+        private Double number;
+        public static JSONNumber getInstance(Object o) {
+            return new JSONNumber((Double)o);
+        }
         public JSONNumber(Short value) {
-            this.number = value;
+            this.number = new Double(value);
         }
         public JSONNumber(Integer value) {
-            this.number = value;
+            this.number = new Double(value);
         }
         public JSONNumber(Long value) {
-            this.number = value;
+            this.number = new Double(value);
         }
         public JSONNumber(Float value) {
-            this.number = value;
+            this.number = new Double(value);
         }
         public JSONNumber(Double value) {
             this.number = value;
         }
-        public <T>T createObject(Class<T> expectClass) {
-            return null;
+        @Override
+        public boolean isAcceptable(Class<?> expectClass) {
+            return expectClass == short.class
+                    || Short.class.isAssignableFrom(expectClass)
+                    || expectClass == int.class
+                    || Integer.class.isAssignableFrom(expectClass)
+                    || expectClass == long.class
+                    || Long.class.isAssignableFrom(expectClass)
+                    || expectClass == float.class
+                    || Float.class.isAssignableFrom(expectClass)
+                    || expectClass == double.class
+                    || Double.class.isAssignableFrom(expectClass);
+        }
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T getValue(Class<T> expectClass) {
+            if (expectClass == short.class || expectClass == Short.class) {
+                return (T)(new Integer(number.intValue()));
+            } else if (expectClass == int.class || expectClass == Integer.class) {
+                return (T)(new Integer(number.intValue()));
+            } else if (expectClass == long.class || expectClass == Long.class) {
+                return (T)(new Long(number.longValue()));
+            } else if (expectClass == float.class || expectClass == Float.class) {
+                return (T)(new Float(number.floatValue()));
+            } else {
+                return (T)number;
+            }
         }
         public String toString() {
             if (number == null) {
@@ -182,8 +281,13 @@ public class JSON {
         public JSONString(String value) {
             this.string = value;
         }
+        @Override
+        public boolean isAcceptable(Class<?> expectClass) {
+            return String.class.isAssignableFrom(expectClass);
+        }
         @SuppressWarnings("unchecked")
-        public <T>T createObject(Class<T> expectClass) {
+        @Override
+        public <T> T getValue(Class<T> expectClass) {
             return (T)string;
         }
         public String toString() {
@@ -210,6 +314,8 @@ public class JSON {
      */
     public static class JSONArray extends JSONable {
         private List<JSONable> jsonList = new ArrayList<JSONable>();
+        public JSONArray() {
+        }
         public JSONArray(boolean[] value) {
             for (boolean b : value) {
                 jsonList.add(new JSONBoolean(b));
@@ -248,7 +354,25 @@ public class JSON {
                 jsonList.add(jsonify(value));
             }
         }
-        public <T>T createObject(Class<T> expectClass) {
+        public void add(JSONable item) {
+            jsonList.add(item);
+        }
+        @Override
+        public boolean isAcceptable(Class<?> expectClass) {
+            return expectClass.isArray() || List.class.isAssignableFrom(expectClass);
+        }
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T getValue(Class<T> expectClass) {
+            if (expectClass.isArray()) {
+                int length = jsonList.size();
+                Object result = Array.newInstance(expectClass.getComponentType(), length);
+                for (int i = 0; i < length; i++) {
+                    JSONable json = jsonList.get(i);
+                    Array.set(result, i, json.getValue(expectClass.getComponentType())); 
+                }
+                return (T)result;
+            }
             return null;
         }
         public String toString() {
@@ -269,6 +393,8 @@ public class JSON {
     public static class JSONObject extends JSONable {
         private Map<String,JSONable> map = new TreeMap<String,JSONable>();
         
+        public JSONObject() {
+        }
         public JSONObject(Map<?, ?> value) {
             for (Object key : value.keySet()) {
                 map.put(key.toString(), JSON.jsonify(value.get(key)));
@@ -278,8 +404,10 @@ public class JSON {
             if (value == null) {
                 return;
             }
-            for (Method method : value.getClass().getDeclaredMethods()) {
-                if (!method.getName().startsWith("get") || method.getReturnType() == null) {
+            for (Method method : value.getClass().getMethods()) {
+                if (!method.getName().startsWith("get")
+                        || method.getName().equals("getClass")
+                        || method.getReturnType() == null) {
                     continue;
                 }
                 try {
@@ -297,7 +425,15 @@ public class JSON {
                 }
             }
         }
-        public <T>T createObject(Class<T> expectClass) {
+        public void setProperty(String propertyName, JSONable propertyValue) {
+            map.put(propertyName, propertyValue);
+        }
+        @Override
+        public boolean isAcceptable(Class<?> expectClass) {
+            return true;
+        }
+        @Override
+        public <T> T getValue(Class<T> expectClass) {
             try {
                 T result = expectClass.newInstance();
                 Map<String,Method> methodMap = new HashMap<String,Method>();
@@ -312,18 +448,28 @@ public class JSON {
                     methodMap.put(propertyName, method);
                 }
                 for (String key : map.keySet()) {
+                    JSONable value = map.get(key);
                     Method method = methodMap.get(key);
                     if (method == null) {
-                        throw new JSONException("setter for  '" + key + "' not found.");
+                        throw new JSONException("setter[" + key + "] not found.");
+                    }
+                    Class<?> paramType = method.getParameterTypes()[0];
+                    if (value.isAcceptable(paramType)) {
+                        method.invoke(result, value.getValue(paramType));
+                    } else {
+                        throw new JSONException("paramType[" + paramType + "] is not applicable.");
                     }
                 }
                 return result;
             } catch (InstantiationException e) {
-                e.printStackTrace();
+                throw new JSONException(e);
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                throw new JSONException(e);
+            } catch (IllegalArgumentException e) {
+                throw new JSONException(e);
+            } catch (InvocationTargetException e) {
+                throw new JSONException(e);
             }
-            return null;
         }
         public String toString() {
             StringBuffer sb = new StringBuffer("{");

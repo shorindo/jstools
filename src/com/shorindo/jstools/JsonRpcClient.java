@@ -66,7 +66,7 @@ public class JsonRpcClient {
         request.setJsonrpc(version);
         request.setId(id);
         request.setMethod(method);
-        String s = encode(request);
+        String s = JSON.stringify(request);
         connector.getOutputStream().write(s.getBytes());
         JsonRpcResponse response = new JsonRpcResponse();
         response.decode(connector.getInputStream());
@@ -83,16 +83,16 @@ public class JsonRpcClient {
         reader.close();
         return sb.toString();
     }
-    protected String encode(Object o) throws IOException {
-        try {
-            ScriptEngineManager manager = new ScriptEngineManager();
-            ScriptEngine engine = manager.getEngineByName("JavaScript");
-            //engine.put("test", new TestGetter());
-            return "";
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
+//    protected String encode(Object o) throws IOException {
+//        try {
+//            ScriptEngineManager manager = new ScriptEngineManager();
+//            ScriptEngine engine = manager.getEngineByName("JavaScript");
+//            //engine.put("test", new TestGetter());
+//            return "";
+//        } catch (Exception e) {
+//            throw new IOException(e);
+//        }
+//    }
     private static void debug(Object msg) {
         System.out.println("[D] " + msg);
     }
@@ -313,30 +313,22 @@ public class JsonRpcClient {
         @SuppressWarnings("rawtypes")
         private Map response;
 
+        public JsonRpcResponse() {
+        }
+        public JsonRpcResponse(InputStream is) {
+            try {
+                JsonRpcResponse response = JSON.parse(getContent(is), JsonRpcResponse.class);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
         @SuppressWarnings("rawtypes")
         public void decode(InputStream is) {
             ScriptEngineManager manager = new ScriptEngineManager();
             ScriptEngine engine = manager.getEngineByName("JavaScript");
             try {
                 engine.put("json", getContent(is));
-                JSONable jsonable = (JSONable)engine.eval(
-                    "importPackage(com.shorindo.jstools);\n" +
-                    "function js2jsonable(o) {\n" +
-                    "    if (o == null || typeof o == 'undefined') {\n" +
-                    "        return new com.shorindo.jstools.JSON.JSONNull();\n" +
-                    "    } else if (typeof o == 'boolean') {\n" +
-                    "        return new com.shorindo.jstools.JSON.JSONBoolean(o);\n" +
-                    "    } else if (typeof o == 'number') {\n" +
-                    "        return new com.shorindo.jstools.JSON.JSONNumber(o);\n" +
-                    "    } else if (typeof o == 'string') {\n" +
-                    "        return new com.shorindo.jstools.JSON.JSONString(o);\n" +
-                    "    } else {\n" +
-                    "        return new com.shorindo.jstools.JSON.JSONObject(o);\n" +
-                    "    }\n" +
-                    "}\n" +
-                    "js2jsonable(JSON.parse(json));\n"
-                    );
-                System.out.println(jsonable.toString());
                 Object x = engine.eval(
                     "importPackage(java.util);" +
                     "function js2java(o) {" +
