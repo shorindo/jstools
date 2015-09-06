@@ -40,8 +40,8 @@ function createGraph(data) {
         }
     }
     
-    console.log("nodes:" + JSON.stringify(nodes, null, 4));
-    console.log("edges:" + JSON.stringify(edges, null, 4));
+    //console.log("nodes:" + JSON.stringify(nodes, null, 4));
+    //console.log("edges:" + JSON.stringify(edges, null, 4));
     
     var cy = cytoscape({
         container: document.getElementById('cyto-canvas'),
@@ -127,6 +127,7 @@ function rvisit(node, edge) {
 function findPathFrom(start, data, visit) {
     var visited = [];
     var find = function(path) {
+        console.log(path);
         var begin = path[path.length - 1];
         var prev = path.length > 1 ? path[path.length - 2] : null;
         var next = data[begin];
@@ -140,7 +141,11 @@ function findPathFrom(start, data, visit) {
             for (var i = 0; i < next.length; i++) {
                 if (path.indexOf(next[i]) < 0) {
                     path.push(next[i]);
-                    find(path);
+                    (function(path) {
+                        setTimeout(function() {
+                            find(path);
+                        }, 100);
+                    })(path);
                     path.pop();
                 }
             }
@@ -214,7 +219,7 @@ var DATA = {
     }
 };
 
-var DELAY = 500;
+var DELAY = 3000;
 
 QUnit.asyncTest('findPathFrom():1 nodes', function(assert) {
     var data = DATA['1'];

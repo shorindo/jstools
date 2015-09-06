@@ -78,6 +78,7 @@ if (!("__jstools__" in window)) {
             icon.style.top = "10px";
             icon.style.right = "10px";
             icon.style.background = "red";
+            icon.style.zIndex = 999999;
             icon.onclick = function(evt) {
                 __jstools__.report();
             };
