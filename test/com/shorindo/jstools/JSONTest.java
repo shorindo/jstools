@@ -81,7 +81,7 @@ public class JSONTest {
         array[2] = new TestClass() {
             public String getS() { return "abc"; }
         };
-        assertEquals("[{\"i\":123},{\"d\":123.456},{\"s\":\"abc\"}]", JSON.stringify(array));
+        assertEquals("[{\"d\":0.0,\"i\":123,\"o\":null,\"s\":null},{\"d\":123.456,\"i\":0,\"o\":null,\"s\":null},{\"d\":0.0,\"i\":0,\"o\":null,\"s\":\"abc\"}]", JSON.stringify(array));
     }
     @Test
     public void testStringifyObject() throws Exception {
@@ -213,14 +213,12 @@ public class JSONTest {
 //            return result;
         }
     }
-    @Test
-    public void testType() {
-        //型として指定するクラスは引数なしのコンストラクタを持たねばならない
-        //インスタンス化するときは指定クラスを継承した匿名クラスとしてnewしなくてはならない
-        Response<String> response = new Response<String>();
-        response.setResult("abc");
-//        System.out.println(JSON.stringify(response));
-//        assertEquals("abc", response.getResult());
-        JSON.parse("{\"result\":\"hoeg\"}", response.getClass());
-    }
+//    @Test
+//    public void testType() {
+//        //型として指定するクラスは引数なしのコンストラクタを持たねばならない
+//        //インスタンス化するときは指定クラスを継承した匿名クラスとしてnewしなくてはならない
+//        Response<String> response = new Response<String>(){};
+//        response.setResult("abc");
+//        JSON.parse("{\"result\":\"hoeg\"}", response.getClass());
+//    }
 }

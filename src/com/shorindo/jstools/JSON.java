@@ -92,6 +92,9 @@ public class JSON {
         return json;
     }
     public static <T>T parse(String json, Class<T> expectClass) {
+        return parse(json).getValue(expectClass);
+    }
+    public static JSONable parse(String json) {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("JavaScript");
         try {
@@ -125,7 +128,7 @@ public class JSON {
                     "js2java(JSON.parse(json));"
                 );
             System.out.println(jsonable.toString());
-            return jsonable.getValue(expectClass);
+            return jsonable;
         } catch (ScriptException e) {
             throw new JSONException(e);
         }
