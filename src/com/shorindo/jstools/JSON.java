@@ -18,12 +18,15 @@ package com.shorindo.jstools;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -140,19 +143,15 @@ public class JSON {
         return new JSONBoolean(b);
     }
     public static JSONable createNumber(Double d) {
-        System.out.println("createNumber(" + d + ")");
         return new JSONNumber(d);
     }
     public static JSONable createString(String s) {
-        System.out.println("createString(" + s + ")");
         return new JSONString(s);
     }
     public static JSONable createArray() {
-        System.out.println("createArray()");
         return new JSONArray();
     }
     public static JSONable createObject() {
-        System.out.println("createArray()");
         return new JSONObject();
     }
     private static boolean isSubclass(Object o, Class<?> c) {
@@ -163,8 +162,23 @@ public class JSON {
      * 
      */
     public static abstract class JSONable {
+        private static final Pattern pattern = Pattern.compile("^([^\\.\\[]+)(\\[\\d+\\])?(\\..+)$");
         public abstract boolean isAcceptable(Class<?> expectClass);
         public abstract <T>T getValue(Class<T> expectClass);
+        public void findValue(String id) {
+            Matcher matcher = pattern.matcher(id);
+            String key = id;
+            if (matcher.matches()) {
+                key = matcher.group(1);
+            }
+            if (this instanceof JSONArray) {
+                
+            } else if (this instanceof JSONObject) {
+                
+            } else {
+                
+            }
+        }
     }
     
     /**
@@ -380,7 +394,7 @@ public class JSON {
         public boolean isAcceptable(Class<?> expectClass) {
             return expectClass.isArray() || List.class.isAssignableFrom(expectClass);
         }
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         @Override
         public <T> T getValue(Class<T> expectClass) {
             if (expectClass.isArray()) {
@@ -391,8 +405,22 @@ public class JSON {
                     Array.set(result, i, json.getValue(expectClass.getComponentType())); 
                 }
                 return (T)result;
+            } else if (List.class.isAssignableFrom(expectClass)) {
+                List result = new ArrayList();
+                Class<?> typeClass = String.class;
+                if (expectClass.getGenericSuperclass() instanceof ParameterizedType) {
+                    ParameterizedType type = (ParameterizedType)expectClass.getGenericSuperclass();
+                    if (type.getActualTypeArguments().length > 0) {
+                        typeClass = (Class<?>)type.getActualTypeArguments()[0];
+                    }
+                }
+                for (JSONable item : jsonList) {
+                    result.add(item.getValue(typeClass));
+                }
+                return (T)result;
+            } else {
+                throw new RuntimeException("unknown:" + expectClass);
             }
-            return null;
         }
         public String toString() {
             StringBuffer sb = new StringBuffer(BEGIN_ARRAY);
@@ -446,6 +474,13 @@ public class JSON {
         }
         public void setProperty(String propertyName, JSONable propertyValue) {
             map.put(propertyName, propertyValue);
+        }
+        public <T>T getProperty(String propertyName, Class<T> expectClass) {
+            if (map.containsKey(propertyName)) {
+                return map.get(propertyName).getValue(expectClass);
+            } else {
+                return null;
+            }
         }
         @Override
         public boolean isAcceptable(Class<?> expectClass) {
