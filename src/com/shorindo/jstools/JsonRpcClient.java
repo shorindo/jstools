@@ -20,25 +20,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
 import com.shorindo.jstools.JSON.JSONObject;
-import com.shorindo.jstools.JSON.JSONable;
+import com.shorindo.jstools.JSON.JSONString;
 
 /**
  * 
@@ -83,219 +71,55 @@ public class JsonRpcClient {
         reader.close();
         return sb.toString();
     }
-    private static void debug(Object msg) {
+
+    protected static void debug(Object msg) {
         System.out.println("[D] " + msg);
     }
-    private static void warn(Object msg) {
+
+    protected static void warn(Object msg) {
         System.out.println("[W] " + msg);
     }
 
-//    /*
-//     * JSType -> undefined null number string array object
-//     * Java
-//     * null      null      null x      x      x     x
-//     * boolean   null      null o      o      x     o
-//     * short     null      null o      x      x     x
-//     * int       null      null o      x      x     x
-//     * long      null      null o      x      x     x
-//     * float     null      null o      x      x     x
-//     * double    null      null o      x      x     x
-//     * String    null      null o      o      x     x
-//     * Array     null      null x      x      o     x
-//     * List      null      null x      x      o     x
-//     * Object    null      null x      x      x     o
-//     */
-//    @SuppressWarnings({ "unchecked", "rawtypes" })
-//    protected static <X>X createBeanFromMap(Object o, Class<X> resultClass) {
-//        debug("createBeanFromMap(" + o + ", " + resultClass + ")");
-//        if (o == null) {
-//            return null;
-//        } else if (o instanceof Boolean) {
-//            return (X)o;
-//        } else if (o instanceof Double) {
-//            if (resultClass == int.class || resultClass == Integer.class) {
-//                return (X)(new Integer(((Double)o).intValue()));
-//            } else if (resultClass == long.class || resultClass == Long.class) {
-//                return (X)(new Long(((Double)o).longValue()));
-//            } else if (resultClass == float.class || resultClass == Float.class) {
-//                return (X)(new Float(((Double)o).floatValue()));
-//            } else if (resultClass == double.class || resultClass == Double.class) {
-//                return (X)((Double)o);
-//            } else if (resultClass == String.class) {
-//                return (X)(String.valueOf((Double)o));
-//            } else {
-//                return (X)o;
-//            }
-//        } else if (o instanceof String) {
-//            if (resultClass == int.class || resultClass == Integer.class) {
-//                return (X)(String.valueOf(Integer.parseInt((String)o)));
-//            } else if (resultClass == long.class || resultClass == Long.class) {
-//                return (X)(String.valueOf(Long.parseLong((String)o)));
-//            } else if (resultClass == float.class || resultClass == Float.class) {
-//                return (X)(String.valueOf(Float.parseFloat((String)o)));
-//            } else if (resultClass == double.class || resultClass == Double.class) {
-//                return (X)(String.valueOf(Double.parseDouble((String)o)));
-//            } else if (resultClass == String.class) {
-//                return (X)o;
-//            }
-//        } else if (o instanceof List) {
-//            if (resultClass.isArray()) {
-//                List sourceList = (List)o;
-//                int size = sourceList.size();
-//                X resultArray = (X)Array.newInstance(resultClass.getComponentType(), size);
-//                for (int i = 0; i < size; i++) {
-//                    Array.set(resultArray, i, (X)createBeanFromMap(sourceList.get(i), resultClass.getComponentType()));
-//                }
-//                return (X)resultArray;
-//            } else if (List.class.isAssignableFrom(resultClass)) {
-//                List sourceList = (List)o;
-//                List resultList = new ArrayList();
-//                Type type = resultClass.getGenericSuperclass();
-//                if (type instanceof ParameterizedType) {
-//                    Type actualType = ((ParameterizedType)type).getActualTypeArguments()[0];
-//                    for (Object item : sourceList) {
-//                        resultList.add(createBeanFromMap(item, (Class)actualType));
-//                    }
-//                    return (X)resultList;
-//                } else {
-//                    warn("UNKNOWN TYPE:" + o);
-//                }
-//            } else {
-//                warn("UNKNOWN CLASS:" + o);
-//            }
-//        } else if (o instanceof Map) {
-//            try {
-//                return setObjectProperty((Map)o, resultClass);
-//            } catch (IllegalAccessException e) {
-//                e.printStackTrace();
-//            } catch (InstantiationException e) {
-//                e.printStackTrace();
-//            } catch (IllegalArgumentException e) {
-//                e.printStackTrace();
-//            } catch (InvocationTargetException e) {
-//                e.printStackTrace();
-//            }
-//        } else {
-//            return (X)o;
-//        }
-//        return null;
-//    }
-//    
-//    protected static <X>X setObjectProperty(Map source, Class<X> targetClass) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-//        X target = targetClass.newInstance();
-//        Method[] methods = targetClass.getMethods();
-//        Map<String,Method> methodMap = new HashMap<String,Method>();
-//        for (Method method : methods) {
-//            if (!method.getName().matches("^set.*$")) {
-//                continue;
-//            }
-//            String propertyName =
-//                    method.getName().replaceAll("^set(.*)$", "$1");
-//            propertyName =
-//                    propertyName.substring(0, 1).toLowerCase() +
-//                    propertyName.substring(1);
-//            methodMap.put(propertyName, method);
-//        }
-//        for (Object key : source.keySet()) {
-//            Object value = source.get(key);
-//            Method method = methodMap.get(key);
-//            if (method == null) {
-//                warn("getter method not found for '" + key + "'.");
-//                continue;
-//            }
-//            if (value == null) {
-//                target = null;
-//            } else if (Boolean.class.isAssignableFrom(value.getClass())) {
-//                Class<?> type = method.getParameterTypes()[0];
-//                if (type == Boolean.class || type == boolean.class) {
-//                    method.invoke(target, value);
-//                } else {
-//                    warn("getter method not found for '" + key + "'.");
-//                }
-//            } else if (Double.class.isAssignableFrom(value.getClass())) {
-//                Class<?> type = method.getParameterTypes()[0];
-//                if (type == Double.class || type == double.class) {
-//                    method.invoke(target, value);
-//                } else if (type == Integer.class || type == int.class) {
-//                    method.invoke(target, ((Double)value).intValue());
-//                } else {
-//                    warn("getter method not found for '" + key + "'.");
-//                }
-//            } else if (value.getClass() == String.class) {
-//                if (method.getParameterTypes()[0] == String.class) {
-//                    method.invoke(target, value);
-//                } else {
-//                    warn("getter method not found for '" + key + "'.");
-//                }
-//            } else if (List.class.isAssignableFrom(value.getClass())) {
-//                debug("setObjectProperty(" + value.getClass().getSimpleName() + ")");
-//            } else if (Map.class.isAssignableFrom(value.getClass())) {
-//                Class<?> type = method.getParameterTypes()[0];
-//                method.invoke(target, setObjectProperty((Map)value, type));
-//            } else {
-//                warn("UNKNOWN:" + value.getClass().getSimpleName());
-//            }
-//        }
-//        return target;
-//    }
+    protected static class JsonRpcRequest {
+        private JSONObject request;
+        private Object params;
 
-    public static class JsonRpcRequest {
-        private String jsonrpc;
-        private String method;
-        private Object[] params;
-        private String id;
-        
-//        public String toJSON() {
-//            ScriptEngineManager manager = new ScriptEngineManager();
-//            ScriptEngine engine = manager.getEngineByName("JavaScript");
-//            engine.put("request", this);
-//            try {
-//                return (String)engine.eval(
-//                    "(function(o){" +
-//                    "    var fn = arguments.callee;" +
-//                    "    var result = '{';" +
-//                    "    var sep = '';" +
-//                    "    for (var key in o) {" +
-//                    "        if (typeof o[key] == 'function') continue;" +
-//                    "        if (key == 'class') continue;" +
-//                    "        /*println(key + ':' + typeof o[key] + '=' + o[key]);*/" +
-//                    "        result += sep + '\"' + key + '\":' + fn(o[key]);" +
-//                    "        sep = ',';" +
-//                    "    }" +
-//                    "    result += '}';" +
-//                    "    return result;" +
-//                    "})(request);"
-//                    );
-//            } catch (ScriptException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
+        public JsonRpcRequest() {
+            request = new JSONObject();
+            request.setProperty("jsonrpc", new JSONString("2.0"));
+        }
         public String getJsonrpc() {
-            return jsonrpc;
+            return request.getProperty("jsonrpc", String.class);
         }
         public void setJsonrpc(String jsonrpc) {
-            this.jsonrpc = jsonrpc;
+            request.setProperty("jsonrpc", new JSONString(jsonrpc));
         }
         public String getMethod() {
-            return method;
+            return request.getProperty("method", String.class);
         }
         public void setMethod(String method) {
-            this.method = method;
+            request.setProperty("method", new JSONString(method));
         }
-        public Object[] getParams() {
+        public Object getParams() {
             return params;
         }
-        public void setParams(Object[] params) {
-            this.params = params;
+        public void setParam(Object namedParam) {
+            this.params = namedParam;
+        }
+        public void setParams(Object[] positionParams) {
+            this.params = positionParams;
         }
         public String getId() {
-            return id;
+            return request.getProperty("id", String.class);
         }
         public void setId(String id) {
-            this.id = id;
+            request.setProperty("id", new JSONString(id));
+        }
+        public String toString() {
+            return request.toString();
         }
     }
-    public static class JsonRpcResponse {
+    protected static class JsonRpcResponse {
         private JSONObject response;
         
         public JsonRpcResponse(InputStream is) {

@@ -181,6 +181,11 @@ Pad : (function() {
                     line.importFromDOM(child);
                     this.addShape(line);
                     break;
+                case 'polyline':
+                    var polyline = new Polyline(0, 0);
+                    polyline.importFromDOM(child);
+                    this.addShape(polyline);
+                    break;
                 case 'rect':
                     var rect = new Rect(0, 0);
                     rect.importFromDOM(child);
@@ -320,6 +325,7 @@ Pad : (function() {
             this.shapeList = [];
             this.dom = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
             setStyle(this.dom.style);
+            this.dom.style.zIndex = 2;
             var p = inverse({x:x, y:y});
             this.dom.setAttribute("points", p.x + "," + p.y);
             this.points = [{x:p.x, y:p.y}, {x:p.x, y:p.y}];
@@ -327,23 +333,39 @@ Pad : (function() {
             this.oy = p.y;
         },
         onStart : function(x, y) {
+            var done = false;
+            var stime = new Date().getTime();
             var self = this;
             var draw = function(evt) {
                 evt = fixEvent(evt);
                 var point = inverse({x:evt.absX, y:evt.absY});
-                self.moveTo(point.x, point.y, 5)
+                self.moveTo(point.x, point.y, 5);
             };
             var mark = function(evt) {
                 evt = fixEvent(evt);
                 var point = inverse({x:evt.absX, y:evt.absY});
                 self.points.push({x:point.x, y:point.y});
-                self.moveTo(point.x, point.y, 5)
+                self.moveTo(point.x, point.y, 5);
+                if (new Date().getTime() - stime > 1000) {
+                    finish();
+                }
             };
+            var start = function() {
+                stime = new Date().getTime();
+            };
+            var finish = function() {
+                self.onFinish();
+                document.removeEventListener(event.start, start);
+                document.removeEventListener(event.move, draw);
+                document.removeEventListener(event.end, mark);
+                done = true;
+            }
+            document.addEventListener(event.start, start);
             document.addEventListener(event.move, draw);
             document.addEventListener(event.end, mark);
             return function(evt) {
                 console.log(evt);
-                return false;
+                return done;
             };
         },
         moveTo : function(x, y, accuracy) {
@@ -600,13 +622,43 @@ Pad : (function() {
             this.shapeList = [];
             this.dom = parent.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "g"));
             this.dom.id = "canvas-pane";
+            this.dom.style.zIndex = "1";
+            var markerStart = function(evt) {
+                evt = fixEvent(evt);
+                var p = inverse({x:evt.absX, y:evt.absY});
+                marker.setAttribute("cx", p.x);
+                marker.setAttribute("cy", p.y);
+                marker.style.fill = "gray";
+            };
+            var markerMove = function(evt) {
+                evt = fixEvent(evt);
+                var p = inverse({x:evt.absX, y:evt.absY});
+                marker.setAttribute("cx", p.x);
+                marker.setAttribute("cy", p.y);
+            };
+            var markerEnd = function(evt) {
+                marker.style.fill = "none";
+            };
+            this.createMarker = function() {
+                console.log("createMarker");
+                marker = self.dom.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "circle"));
+                marker.style.zIndex = -1;
+                marker.style.fill = "none";
+                marker.style.fillOpacity = "0.5";
+                marker.setAttribute("cx", 100);
+                marker.setAttribute("cy", 100);
+                marker.setAttribute("r", 20);
+                parent.addEventListener(event.start, markerStart);
+                parent.addEventListener(event.move, markerMove);
+                parent.addEventListener(event.end, markerEnd);
+            };
             var start = function(evt) {
                 evt = fixEvent(evt);
-                evt.preventDefault();
-                evt.stopPropagation();
                 if (hook && !hook(evt)) {
                     return;
                 }
+                evt.preventDefault();
+                evt.stopPropagation();
                 switch(self.mode) {
                 case MODE_PATH:
                     var shape = new Path(evt.absX, evt.absY);
@@ -650,6 +702,17 @@ Pad : (function() {
                 return false;
             };
             parent.addEventListener(event.start, start);
+            parent.addEventListener("dragover", function(evt) {
+                evt.stopPropagation();
+                evt.preventDefault();
+                return false;
+            }, false);
+            parent.addEventListener("drop", function(evt) {
+                evt.stopPropagation();
+                evt.preventDefault();
+                console.log("drop:", evt.dataTransfer);
+                return false;
+            }, false);
             return this;
         },
         clear : function() {
@@ -660,6 +723,7 @@ Pad : (function() {
             for (var i = this.dom.childNodes.length - 1; i >= 0; i--) {
                 this.dom.removeChild(this.dom.childNodes.item(i));
             }
+            this.createMarker();
         },
         undo : function() {
             if (this.shapeList.length > 0) {
@@ -763,18 +827,16 @@ Pad : (function() {
             if (!parent) parent = window;
             if (parent === window) {
                 parent.document.body.appendChild(this.dom);
-                with(this.dom.style) {
-                    position = "absolute";
-                    left = "0px";
-                    top = "0px";
-                };
+                var sytle = this.dom.style;
+                style.position = "absolute";
+                style.left = "0px";
+                style.top = "0px";
             } else {
                 parent.appendChild(this.dom);
-                with(this.dom.style) {
-                    position = "relative";
-                    left = "0px";
-                    top = "0px";
-                };
+                var style = this.dom.style;
+                style.position = "relative";
+                style.left = "0px";
+                style.top = "0px";
             }
 
             canvas = new Canvas(this.dom);
@@ -825,6 +887,10 @@ Pad : (function() {
             return keys;
         },
         sync : function() {
+        },
+        dump : function() {
+            var w = window.open("about:blank");
+            w.document.body.innerHTML = this.toSVG(this.dom);
         },
         toSVG : function(node) {
             if (node.nodeType == Node.ELEMENT_NODE) {

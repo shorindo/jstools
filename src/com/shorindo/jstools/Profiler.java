@@ -234,6 +234,10 @@ public class Profiler extends Instrument {
         NumberLiteral functionId = new NumberLiteral();
         functionId.setValue(String.valueOf(info.getFunctionId()));
         call.addArgument(functionId);
+        StringLiteral functionName = new StringLiteral();
+        functionName.setQuoteCharacter('\'');
+        functionName.setValue(info.getName());
+        call.addArgument(functionName);
         ExpressionStatement stmt = new ExpressionStatement();
         stmt.setExpression(call);
 

@@ -28,9 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-
 import org.junit.Test;
 
 import com.shorindo.jstools.JsonRpcClient.JsonConnector;
@@ -40,77 +37,12 @@ import com.shorindo.jstools.JsonRpcClient.JsonRpcRequest;
  * 
  */
 public class JsonRpcClientTest {
-//    @Test
-//    public void testStringify() throws Exception {
-//        assertEquals("null", JSON.stringify(null));
-//        assertEquals("true", JSON.stringify(true));
-//        assertEquals("false", JSON.stringify(false));
-//        assertEquals("123", JSON.stringify((short)123));
-//        assertEquals("123", JSON.stringify(new Short((short)123)));
-//        assertEquals("123", JSON.stringify((int)123));
-//        assertEquals("123", JSON.stringify(new Integer(123)));
-//        assertEquals("123", JSON.stringify((long)123));
-//        assertEquals("123", JSON.stringify(new Long(123)));
-//        assertEquals("123.456", JSON.stringify((float)123.456));
-//        assertEquals("123.456", JSON.stringify(new Float(123.456)));
-//        assertEquals("123.456", JSON.stringify((double)123.456));
-//        assertEquals("123.456", JSON.stringify(new Double(123.456)));
-//        assertEquals("\"abc\"", JSON.stringify("abc"));
-//        assertEquals("[]", JSON.stringify(new String[]{}));
-//        assertEquals("[true,false,true]", JSON.stringify(new boolean[]{ true, false, true }));
-//        assertEquals("[true,false,true]", JSON.stringify(new Boolean[]{ true, false, true }));
-//        assertEquals("[1,2,3]", JSON.stringify(new int[]{ 1, 2, 3 }));
-//        assertEquals("[1,2,3]", JSON.stringify(new Integer[]{ 1, 2, 3 }));
-//        assertEquals("[1,2,3]", JSON.stringify(new long[]{ 1, 2, 3 }));
-//        assertEquals("[1,2,3]", JSON.stringify(new Long[]{ (long)1, (long)2, (long)3 }));
-//        assertEquals("[1.2,2.3,3.4]", JSON.stringify(new float[]{ (float)1.2, (float)2.3, (float)3.4 }));
-//        assertEquals("[1.2,2.3,3.4]", JSON.stringify(new Float[]{ (float)1.2, (float)2.3, (float)3.4 }));
-//        assertEquals("[1.2,2.3,3.4]", JSON.stringify(new double[]{ (double)1.2, (double)2.3, (double)3.4 }));
-//        assertEquals("[1.2,2.3,3.4]", JSON.stringify(new Double[]{ (double)1.2, (double)2.3, (double)3.4 }));
-//        TestClass[] array = new TestClass[3];
-//        array[0] = new TestClass() {
-//            public int getI() { return 123; }
-//        };
-//        array[1] = new TestClass() {
-//            public double getD() { return 123.456; }
-//        };
-//        array[2] = new TestClass() {
-//            public String getS() { return "abc"; }
-//        };
-//        assertEquals("[{\"i\":123},{\"d\":123.456},{\"s\":\"abc\"}]", JSON.stringify(array));
-//        assertEquals("{}", JSON.stringify(new Object(){}));
-//        Map<String,Object> expectMap = new HashMap<String,Object>();
-//        expectMap.put("b", true);
-//        expectMap.put("i", (int)123);
-//        expectMap.put("f", (float)123);
-//        expectMap.put("d", (double)123.456);
-//        expectMap.put("s", "abc");
-//        assertEquals("{\"b\":true,\"d\":123.456,\"f\":123.0,\"i\":123,\"s\":\"abc\"}", JSON.stringify(expectMap));
-//    }
-    
-    /***************************************************************************
-     * 
-     */
-//    @Test
-//    public void testScript() throws Exception {
-//        ScriptEngineManager manager = new ScriptEngineManager();
-//        ScriptEngine engine = manager.getEngineByName("JavaScript");
-//        TestClass o = new TestClass();
-//        engine.put("o", o);
-//        Object result = engine.eval(
-//            "o.i = 123;" +
-//            "o.d = 123.456;" +
-//            "o.s = 'hoge';"
-//        );
-//        assertEquals(123, o.getI());
-//        assertEquals("hoge", o.getS());
-//    }
     
     protected void assertResponse(Class<?> expectClass, Object expectValue, final String response) throws Exception {
         URL url = new URL("http://localhost:8080/wiki");
         JsonConnectorStub stub = new JsonConnectorStub(url) {
             protected String getResponse() {
-                return "\n" + response;
+                return response;
             }
         };
         JsonRpcClient client = new JsonRpcClient(stub);
@@ -285,6 +217,7 @@ public class JsonRpcClientTest {
         request.setJsonrpc("2.0");
         request.setMethod("method");
         request.setParams(new String[] { "a", "b", "c" });
+        //System.out.println(request.toString());
     }
     
     /***************************************************************************
@@ -306,11 +239,11 @@ public class JsonRpcClientTest {
         }
         @Override
         public void connect() throws IOException {
-            System.out.println("POST " + url.toString() + " HTTP/1.1");
+            bos.write(("POST " + url.toString() + " HTTP/1.1").getBytes());
             for (String key : props.keySet()) {
-                System.out.println(key + ": " + props.get(key));
+                bos.write((key + ": " + props.get(key) + "\n").getBytes());
             }
-            System.out.println("");
+            bos.write("\n".getBytes());
         }
         @Override
         public void setRequestProperty(String key, String value) {
@@ -322,8 +255,8 @@ public class JsonRpcClientTest {
         }
         @Override
         public OutputStream getOutputStream() throws IOException {
-            //return bos;
-            return System.out;
+            return bos;
+            //return System.out;
         }
     }
     /***************************************************************************

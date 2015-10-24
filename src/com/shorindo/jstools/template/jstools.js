@@ -1,7 +1,13 @@
 if (!("__jstools__" in window)) {
     window.__jstools__ = (function() {
+        var running = true;
+        var controller;
         var root = new node(0, null);
         var curr = root;
+        var handlers = {
+                'enter': [],
+                'exit': []
+        }
         var now = "performance" in window ?
                 function() { return performance.now(); } :
                 function() { return (new Date()).getTime(); };
@@ -28,37 +34,61 @@ if (!("__jstools__" in window)) {
         node.prototype.addChild = function(child) {
             this.children.push(child);
         };
-        node.prototype.start = function() {
+        node.prototype.startTimer = function() {
             this.stime = now();
         };
-        node.prototype.stop = function() {
+        node.prototype.stopTimer = function() {
             this.elapsed = now() - this.stime;
             delete this.stime;
         };
+        node.prototype.clear = function() {
+            for (var i = 0; i < this.children.length; i++) {
+                this.children[i].clear();
+            }
+            this.children = [];
+        };
 
+        function start() {
+            running = true;
+            controller.style.background = "red";
+        }
+        function stop() {
+            running = false;
+            controller.style.background = "lightgreen";
+            report();
+            clear();
+        }
         function clear() {
+            root.clear();
             root = new node(0, null);
             curr = root;
             //localStorage.removeItem('jstools.profile');
         }
-        function enter(num) {
+        function enter(num, name) {
+            if (!running) return;
             var args = arguments.callee.caller.arguments;
             var child = new node(num, curr);
             child.setArgs(args);
-            child.start();
+            child.startTimer();
             curr.addChild(child);
             curr = child;
+            for (var i = 0; i < handlers['enter'].length; i++) {
+                handlers['enter'][i](num, name);
+            }
         }
         function exit(retval) {
-            curr.stop();
+            if (!running) return retval;
+            curr.stopTimer();
             curr = curr.parent;
+            for (var i = 0; i < handlers['exit'].length; i++) {
+                handlers['exit'][i](retval);
+            }
             return retval;
         }
         function report() {
-            localStorage.setItem('jstools.profile', JSON.stringify(this.tree()));
-            this.clear();
+            localStorage.setItem('jstools.profile', JSON.stringify(tree()));
+            clear();
             window.open(".jstools/analyze.html", "jstools");
-            //window.open(".jstools/profile.html", "profile");
         }
         function tree() {
             function dig(node) {
@@ -71,7 +101,7 @@ if (!("__jstools__" in window)) {
             return dig(root);
         }
         function createControl() {
-            var icon = document.createElement("div");
+            var icon = controller = document.createElement("div");
             icon.style.position = "fixed";
             icon.style.width = "10px";
             icon.style.height = "10px";
@@ -80,18 +110,19 @@ if (!("__jstools__" in window)) {
             icon.style.background = "red";
             icon.style.zIndex = 999999;
             icon.onclick = function(evt) {
-                __jstools__.report();
+                running ? stop() : start();
             };
             document.body.appendChild(icon);
+        }
+        function addHandler(name, fn) {
+            handlers[name].push(fn);
         }
         
         window.addEventListener('load', createControl, false);
         return {
-            'clear':  clear,
             'enter':  enter,
             'exit':   exit,
-            'tree':   tree,
-            'report': report
+            'addHandler': addHandler
         }
     })();
 }

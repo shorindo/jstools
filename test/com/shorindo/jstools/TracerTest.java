@@ -77,35 +77,35 @@ public class TracerTest {
     public void testFunction1() throws Exception {
         createSource("function x() {}");
         String result = tracer.instrument(file);
-        assertMatch("__tracer__.enter(1, 1, 'x', 1, 1);", result);
+        assertMatch("__jstools__.enter(1, 1, 'x', 1, 1);", result);
     }
     
     @Test
     public void testFunction2() throws Exception {
         createSource("var x = function() {}");
         String result = tracer.instrument(file);
-        assertMatch("__tracer__.enter(1, 1, 'x', 1, 9);", result);
+        assertMatch("__jstools__.enter(1, 1, 'x', 1, 9);", result);
     }
 
     @Test
     public void testFunction3() throws Exception {
         createSource("var a = 123;\nfunction xyz() {}");
         String result = tracer.instrument(file);
-        assertMatch("__tracer__.enter(1, 1, 'xyz', 2, 1);", result);
+        assertMatch("__jstools__.enter(1, 1, 'xyz', 2, 1);", result);
     }
 
     @Test
     public void testFunction4() throws Exception {
         createSource("var a = 1; function xyz() {}");
         String result = tracer.instrument(file);
-        assertMatch("__tracer__.enter(1, 1, 'xyz', 1, 12);", result);
+        assertMatch("__jstools__.enter(1, 1, 'xyz', 1, 12);", result);
     }
 
     @Test
     public void testFunction5() throws Exception {
         createSource("(function() {})();");
         String result = tracer.instrument(file);
-        assertMatch("__tracer__.enter(1, 1, '', 1, 2);", result);
+        assertMatch("__jstools__.enter(1, 1, '', 1, 2);", result);
     }
     
     private void assertMatch(String expect, String actual) {

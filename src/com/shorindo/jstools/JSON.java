@@ -130,7 +130,7 @@ public class JSON {
                     "}" +
                     "js2java(JSON.parse(json));"
                 );
-            System.out.println(jsonable.toString());
+            //System.out.println(jsonable.toString());
             return jsonable;
         } catch (ScriptException e) {
             throw new JSONException(e);
@@ -254,14 +254,14 @@ public class JSON {
         @Override
         public boolean isAcceptable(Class<?> expectClass) {
             return expectClass == short.class
-                    || Short.class.isAssignableFrom(expectClass)
                     || expectClass == int.class
-                    || Integer.class.isAssignableFrom(expectClass)
                     || expectClass == long.class
-                    || Long.class.isAssignableFrom(expectClass)
                     || expectClass == float.class
-                    || Float.class.isAssignableFrom(expectClass)
                     || expectClass == double.class
+                    || Short.class.isAssignableFrom(expectClass)
+                    || Integer.class.isAssignableFrom(expectClass)
+                    || Long.class.isAssignableFrom(expectClass)
+                    || Float.class.isAssignableFrom(expectClass)
                     || Double.class.isAssignableFrom(expectClass);
         }
         @SuppressWarnings("unchecked")
@@ -531,6 +531,7 @@ public class JSON {
             for (String key : map.keySet()) {
                 sb.append(sep);
                 sb.append(QUOTE + key + QUOTE + NAME_SEPARATOR);
+                //FIXME escape
                 sb.append(map.get(key).toString());
                 sep = VALUE_SEPERATOR;
             }
