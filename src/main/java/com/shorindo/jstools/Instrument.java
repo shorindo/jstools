@@ -16,15 +16,12 @@
 package com.shorindo.jstools;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -41,34 +38,18 @@ import org.mozilla.javascript.ast.VariableInitializer;
 public abstract class Instrument {
     private List<Pattern> includeList = new ArrayList<Pattern>();
     private List<Pattern> excludeList = new ArrayList<Pattern>();
+    private FileMatcher includesMatcher;
+    private FileMatcher excludesMatcher;
+    protected File base;
     protected List<String> fileList;
     protected List<FunctionInfo> functionList = new ArrayList<FunctionInfo>();
 
     public abstract String instrument(File source) throws IOException;
-    
-//    public void instrumentSources(File srcDir, File destDir) throws IOException {
-//        String sourcePath = srcDir.getAbsolutePath();
-//        List<File> sourceList = visit(srcDir);
-//        for (File src : sourceList) {
-//            String path = src.getAbsolutePath().substring(sourcePath.length());
-//            File dest = new File(destDir, path);
-//            dest.getParentFile().mkdirs();
-//            if (matchPattern(path)) {
-//                log("[instrument]" + dest.getAbsolutePath());
-//                String instrumented = instrument(src);
-//                Writer writer = new FileWriter(dest);
-//                writer.write(instrumented);
-//                writer.close();
-//            } else {
-//                if (dest.exists() && dest.lastModified() >= src.lastModified())
-//                    continue;
-//                log("[copy]" + dest.getAbsolutePath());
-//                Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-//            }
-//        }
-//        generateTools(destDir);
-//    }
-    
+
+    public Instrument(File base) {
+        this.base = base;
+    }
+
     public void generateTools(File dest) throws IOException {
         File dir = new File(dest, ".jstools");
         dir.mkdirs();
@@ -115,7 +96,7 @@ public abstract class Instrument {
     }
     
     public void copyFromResource(String resourceName, File dest) throws IOException {
-        InputStream is = getClass().getResourceAsStream(resourceName);
+        InputStream is = getClass().getClassLoader().getResourceAsStream(resourceName);
         File parent = dest.getParentFile();
         if (!parent.exists()) {
             parent.mkdirs();
@@ -212,27 +193,22 @@ public abstract class Instrument {
         return result;
     }
     
-    protected boolean matchPattern(String path) {
-        path = path.replace(File.separatorChar, '/');
-        for (Pattern pattern : excludeList) {
-            if (pattern.matcher(path).matches()) {
-                return false;
-            }
+    protected boolean matchPattern(File path) {
+        if (excludesMatcher.matches(path)) {
+            return false;
         }
-        for (Pattern pattern : includeList) {
-            if (pattern.matcher(path).matches()) {
-                return true;
-            }
+        if (includesMatcher.matches(path)) {
+            return true;
         }
         return false;
     }
     
-    protected void includes(String pattern) {
-        includeList.add(Pattern.compile("^.*?" + pattern + ".*$"));
+    protected void setIncludes(String pattern) {
+        includesMatcher = new FileMatcher(base, pattern);
     }
     
-    protected void excludes(String pattern) {
-        excludeList.add(Pattern.compile("^.*?" + pattern + ".*$"));
+    protected void setExcludes(String pattern) {
+        excludesMatcher = new FileMatcher(base, pattern);
     }
     
     protected void usage() {

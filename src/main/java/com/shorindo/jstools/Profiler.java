@@ -54,21 +54,22 @@ public class Profiler extends Instrument {
     private static String OBJECT_NAME = "__jstools__";
     private static String ENTER_NAME = "enter";
     private static String EXIT_NAME = "exit";
-    private String source;
+        private String source;
 
-    public static void main(String args[]) {
-        try {
-            Profiler profiler = new Profiler();
-            profiler.includes(".*\\.js$");
-            profiler.instrumentSources(
-                    new File("tools"),
-                    new File("instrumented"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    public static void main(String args[]) {
+//        try {
+//            Profiler profiler = new Profiler();
+//            profiler.includes(".*\\.js$");
+//            profiler.instrumentSources(
+//                    new File("tools"),
+//                    new File("instrumented"));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
     
-    public Profiler() {
+    public Profiler(File base) {
+        super(base);
         fileList = new ArrayList<String>();
     }
     
@@ -79,8 +80,8 @@ public class Profiler extends Instrument {
             String path = src.getAbsolutePath().substring(sourcePath.length());
             File dest = new File(destDir, path);
             dest.getParentFile().mkdirs();
-            if (matchPattern(path)) {
-                log("[instrument]" + dest.getAbsolutePath());
+            if (matchPattern(src)) {
+                log("[inst]" + dest.getAbsolutePath());
                 String instrumented = instrument(src);
                 Writer writer = new FileWriter(dest);
                 writer.write(instrumented);
@@ -196,7 +197,7 @@ public class Profiler extends Instrument {
     public String preProcess(File file, int fileId) {
         StringBuffer sb = new StringBuffer();
         try {
-            InputStream is = getClass().getResourceAsStream("template/jstools.js");
+            InputStream is = getClass().getClassLoader().getResourceAsStream("template/jstools.js");
             InputStreamReader reader = new InputStreamReader(is, "UTF-8");
             char buf[] = new char[2048];
             int len = 0;
